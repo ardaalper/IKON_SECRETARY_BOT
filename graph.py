@@ -12,7 +12,7 @@ from langchain_ollama import ChatOllama
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     kapı: str
-
+    alarm: str
 tools = [guest, cargo, security, door_control,which_guest_of_staff]
 
 
@@ -25,9 +25,9 @@ def call_model(state: AgentState) -> AgentState:
     system_prompt = SystemMessage(content=system_prompt_text)
     # Kapı durumu bilgisini içeren bir SystemMessage oluştur
     door_status_message = SystemMessage(content=f"Mevcut durumda, kapı: {state['kapı']}.")
-
+    alarm_status_message = SystemMessage(content=f"Mevcut durumda, alarm: {state['alarm']}.")
     # Model çağrısı için mesaj listesini oluştur
-    messages_to_send = [system_prompt, door_status_message] + state["messages"]
+    messages_to_send = [system_prompt, door_status_message, alarm_status_message] + state["messages"]
     response = model.invoke(messages_to_send)
 
     return {"messages": [response]}

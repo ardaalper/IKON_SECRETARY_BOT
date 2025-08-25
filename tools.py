@@ -100,9 +100,18 @@ def cargo(query: str) -> str:
 
 @tool
 def security(query: str) -> str:
-    """Kullanıcının güvenlik personelini haberdar etmesi için kullanılır. 
-    Aynı zamanda tehlike arz eden durumları kontrol eder. Örneğin, yangın, hırsızlık, yaralanma 
-    veya diğer acil durumlar."""
+    """Acil durumlar ve güvenlik konularıyla ilgilenen bir araç. Bu aracı, yalnızca bir tehlike veya acil durum tespiti yaptığında ya da bir kullanıcının acil yardım talebi olduğunda kullan.
+
+    İşlev: Güvenlik görevlilerini olay yerine yönlendirir ve durumun ciddiyetini değerlendirir.
+    Kullanım Koşulları:
+    - Kullanıcı bir tehlike (örneğin: "yangın", "hırsızlık", "bomba", "kavga", "yaralanma") bildirdiğinde.
+    - Kullanıcı doğrudan "güvenlik" veya "acil durum" gibi anahtar kelimelerle yardım istediğinde.
+    - Kullanıcının davranışları veya sorguları endişe verici veya şüpheli olduğunda.
+
+    Örnekler: "Acil yardım lazım, birisi bayıldı.", "Burası yanıyor, itfaiye gerekli!", "Güvenlik çağırın!", "Şu an odamda bir hırsız var."
+    
+    Bu araç bir tehdit algıladığında, hızla yanıt vererek durumu ciddiye almalı ve gerekli aksiyonları almalıdır.
+    """
     cursor = sqlite3.connect('./data/security_data.db').cursor()
 
 
@@ -113,9 +122,9 @@ def security(query: str) -> str:
     staff_exists = cursor.fetchone()
 
     if staff_exists:
-        return "emergency durum!!! Güvenlik birimi olay yerine çağrıldı. Lütfen sakin olun." + f"Şirket personeli {staff_exists[0]} ({staff_exists[1]}) bilgisi bulundu. Lütfen daha detaylı bilgi verin."
+        return "emergency !!! Güvenlik birimi olay yerine çağrıldı. Lütfen sakin olun." + f"Şirket personeli {staff_exists[0]} ({staff_exists[1]}) bilgisi bulundu. Lütfen daha detaylı bilgi verin."
     else: 
-        return "emergency durum!!! Güvenlik birimi olay yerine çağrıldı. Lütfen sakin olun." + "Güvenlik birimi veya personel bilgisi bulunamadı. Lütfen daha net bir sorgu girin."
+        return "emergency !!! Güvenlik birimi olay yerine çağrıldı. Lütfen sakin olun." + "Güvenlik birimi veya personel bilgisi bulunamadı. Lütfen daha net bir sorgu girin."
 
 @tool
 def door_control(query: str, password: str = None) -> str:

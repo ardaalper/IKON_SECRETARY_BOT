@@ -26,6 +26,7 @@ class Message(BaseModel):
 class ChatHistory(BaseModel):
     messages: List[Message]
     kapı: str = "Kapalı"
+    alarm: str = "Pasif"
 
 # LangGraph uygulamasını bir kez derle
 compiled_graph = get_graph()
@@ -45,15 +46,17 @@ async def handle_chat(chat_history: ChatHistory):
     
     agent_state = {
         "messages": langgraph_messages,
-        "kapı": chat_history.kapı
+        "kapı": chat_history.kapı,
+        "alarm": chat_history.alarm
     }
 
     final_message_content = ""
     updated_kapı_status = agent_state["kapı"]
-
+    updated_alarm_status = agent_state["alarm"]
+    updated_alarm_status = "Pasif"
     async for s in compiled_graph.astream(agent_state, stream_mode="values"):
         message = s["messages"][-1]
-
+        
         if isinstance(message, AIMessage):
             if message.content:
                 final_message_content = message.content
@@ -63,9 +66,15 @@ async def handle_chat(chat_history: ChatHistory):
             elif "kapı kapatılıyor" in message.content.lower():
                 updated_kapı_status = "Kapalı"
 
+            if "emergency" in message.content.lower():
+                updated_alarm_status = "Aktif"
+            else:
+                updated_alarm_status = "Pasif"
+
     response_history = ChatHistory(
         messages=[Message(content=final_message_content, type="ai")],
-        kapı=updated_kapı_status
+        kapı=updated_kapı_status,
+        alarm=updated_alarm_status
     )
-
+    
     return response_history

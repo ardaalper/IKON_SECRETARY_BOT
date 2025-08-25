@@ -1,3 +1,4 @@
+/* GENEL BODY */
 body {
     font-family: Arial, sans-serif;
     background-color: #f0f2f5;
@@ -9,6 +10,7 @@ body {
     min-height: 100vh;
 }
 
+/* KONTEYNER */
 .container {
     display: flex;
     width: 90%;
@@ -17,9 +19,10 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    height: 80vh; /* Yeni: Konteynerin yüksekliğini sabitle */
+    height: 80vh;
 }
 
+/* CHAT ALANI */
 .chat-area {
     flex: 3;
     padding: 20px;
@@ -28,21 +31,13 @@ body {
     border-right: 1px solid #e0e0e0;
 }
 
-.door-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: #f8f9fa;
-    padding: 20px;
-}
-
+/* SOHBET BAŞLIKLARI */
 h1, h2 {
     color: #333;
     margin-top: 0;
 }
 
+/* CHAT KUTUSU */
 .chat-box {
     flex-grow: 1;
     border: 1px solid #ccc;
@@ -55,6 +50,7 @@ h1, h2 {
     gap: 10px;
 }
 
+/* INPUT ALANI */
 .input-area {
     display: flex;
     gap: 10px;
@@ -86,6 +82,7 @@ h1, h2 {
     background-color: #0056b3;
 }
 
+/* MESAJ STİLLERİ */
 .message {
     padding: 10px 15px;
     border-radius: 18px;
@@ -106,9 +103,50 @@ h1, h2 {
     border-bottom-left-radius: 5px;
 }
 
-#door-image {
+/* DURUM KONTEYNERI */
+.status-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column; /* mobilde üst üste gelebilir */
+    justify-content: center;
+    align-items: stretch;
+    gap: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-left: 1px solid #e0e0e0;
+    border-radius: 0 10px 10px 0;
+}
+
+/* KAPI VE ALARM ALANLARI */
+.door-area, .alarm-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+}
+
+/* KAPI VE ALARM BAŞLIKLARI */
+.door-area h2, .alarm-area h2 {
+    margin-bottom: 10px;
+}
+
+/* RESİMLER AYNI BOYUT */
+#door-image, #alarm-image {
     width: 100%;
-    max-width: 250px;
+    max-width: 200px;
     height: auto;
-    margin-top: 20px;
+    object-fit: contain;
+    margin-top: 10px;
+}
+
+/* YAN YANA GÖRÜNÜM (GENİŞ EKRAN) */
+@media(min-width: 900px) {
+    .status-container {
+        flex-direction: row; /* yan yana diz */
+    }
 }

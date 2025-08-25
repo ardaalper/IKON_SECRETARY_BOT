@@ -4,11 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const doorImage = document.getElementById('door-image');
-
+    const alarmSound = document.getElementById('alarm-sound');
+    const alarmImage = document.getElementById('alarm-image');
     // Sohbet geçmişini saklamak için bir değişken
     let chatHistory = {
         messages: [],
-        kapı: "Kapalı"
+        kapı: "Kapalı",
+        alarm: "Pasif"
     };
 
     // API URL'i
@@ -31,6 +33,25 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (status === "Kapalı") {
             doorImage.src = 'images/closed.png';
             doorImage.alt = 'Kapalı Kapı';
+        }
+    };
+    const updateAlarm = (status) => {
+        if (status === "Aktif") {
+            alarmSound.play();
+        } else {
+            alarmSound.pause();
+            alarmSound.currentTime = 0; // Baştan başlat
+        }
+    };
+    // Kapı görselini güncelleyen fonksiyon
+    const updateAlarmImage = (status) => {
+        if (status === "Aktif") {
+            alarmImage.src = 'images/alarm_on.png';
+            alarmImage.alt = 'Aktif Alarm';
+        } 
+        else if (status === "Pasif") {
+            alarmImage.src = 'images/alarm_off.png';
+            alarmImage.alt = 'Pasif Alarm';
         }
     };
     // API'ye mesaj gönderen fonksiyon
@@ -70,6 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
             chatHistory.kapı = data.kapı;
             updateDoorImage(chatHistory.kapı);
 
+            chatHistory.alarm = data.alarm;
+            updateAlarm(chatHistory.alarm);
+            updateAlarmImage(chatHistory.alarm);
         } catch (error) {
             console.error('Hata:', error);
             appendMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', 'ai');
