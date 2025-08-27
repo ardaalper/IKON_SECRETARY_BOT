@@ -78,10 +78,25 @@ def which_guest_of_staff(query: str, password: str = None) -> str:
 
 @tool
 def cargo(query: str) -> str:
-    """Belirli bir veri kaynağından kargoyla ilgili bilgileri arar.
-    Gönderiler, teslimatlar veya envanter hakkındaki soruları yanıtlamak için kullanışlıdır.
+    """
+    Kargolarla ilgili bilgileri aramak ve listelemek için kullanılır. 
+    Bu araç, şirkete gelen veya gönderilen kargoların durumunu sorgulamak için uygundur. 
+    Sadece kargo ile ilgili sorular için kullanılmalıdır. Diğer konular için kullanılmamalıdır.
+
+    Sağlayabileceği bilgiler:
+    - Kargonun teslim edilip edilmediği veya mevcut durumu
+    - Kargo ID'si üzerinden takip
+    - Belirli bir personel adına gelen kargolar
+    - Hangi şirketten (kargo firması) geldiği bilgisi
+
     Args:
-        query (str): Aranacak belirli terim veya öğe.
+        query (str): Kargo hakkında aranacak anahtar kelime veya bilgi 
+                     (örneğin personel adı, kargo ID'si, şirket adı veya kargo durumu).
+    
+    Returns:
+        str: Eşleşen kayıtların listesi. Her satırda şu bilgiler bulunur:
+             Personel adı, Kargo ID, Kargo firması, Kargonun durumu.
+             Eğer kayıt bulunmazsa "Kargo bilgisi bulunamadı." döner.
     """
     cursor = sqlite3.connect('./data/security_data.db').cursor()
     cursor.execute("SELECT personnel_name, cargo_id, company, status FROM cargos WHERE personnel_name LIKE ? OR cargo_id LIKE ? OR company LIKE ? OR status LIKE ?", ('%'+query+'%', '%'+query+'%', '%'+query+'%', '%'+query+'%'))
@@ -115,9 +130,6 @@ def security(query: str) -> str:
     cursor = sqlite3.connect('./data/security_data.db').cursor()
 
 
-    #os.system("afplay ./data/DangerAlarm.mp3 &")
-    #print("\n\nACIL DURUM!!!\n\n")
-    # Tehlike yoksa personel bilgisi arayın
     cursor.execute("SELECT name, role FROM staff WHERE name LIKE ?", ('%'+query+'%',))
     staff_exists = cursor.fetchone()
 
@@ -128,11 +140,28 @@ def security(query: str) -> str:
 
 @tool
 def door_control(query: str, password: str = None) -> str:
-    """Kapı açarken şifre yönetir ve şifre doğrulaması yapar.
-    Bu araç, kullanıcının kapıyı açma veya kapama gibi işlemleri gerçekleştirmesine olanak tanır.
+    """
+    Kapı kontrol işlemleri için kullanılır. 
+    Kullanıcıdan gelen talimatlara göre kapıyı açma veya kapatma işlevini gerçekleştirir. 
+    Kapı açma işlemleri güvenlik nedeniyle şifre doğrulaması gerektirir. 
+    Kapı kapatma işlemleri için şifre gerekmez.
+
+    Kullanım Alanları:
+    - Kapıyı açma (şifre doğrulaması ile)
+    - Kapıyı kapatma veya kilitleme (şifresiz)
+    
     Args:
-        query (str): Kullanıcının sorgusu (örneğin "kapıyı aç").
-        password (str): Kapı açma gibi hassas işlemler için kullanılan şifre.
+        query (str): Kullanıcının kapı ile ilgili talimatı. 
+                     Örnekler: "kapıyı aç", "kapıyı kapat", "kapıyı kilitle".
+        password (str, optional): Kapıyı açmak için gerekli şifre. 
+                                  Eğer yanlış veya boş girilirse kapı açılmaz.
+    
+    Returns:
+        str: İşlemin sonucu. 
+             - Doğru şifre girilirse: "Şifre doğru. Kapı açılıyor. Hoş geldiniz."
+             - Yanlış/boş şifre girilirse: "Kapıyı açmak için şifre gereklidir. Lütfen şifreyi giriniz."
+             - Kapı kapatma talimatında: "Kapı kapatılıyor. Güle güle."
+             - Geçersiz komut girilirse: "Kapı kontrolü ile ilgili bir komut algılanmadı."
     """
     
     # Kapı açma komutları
@@ -153,3 +182,32 @@ def door_control(query: str, password: str = None) -> str:
         return "Kapı kapatılıyor. Güle güle."
     
     return "Kapı kontrolü ile ilgili bir komut algılanmadı."
+
+@tool
+def staff_info(query: str) -> str:
+    """Personel Bilgisi Sorgulama Aracı
+    Bu tool, veritabanındaki personel kayıtlarını arar ve ilgili bilgileri döndürür. 
+    Kullanıcı adı (personel adı) üzerinden sorgulama yapılır. Tool, personel verilerini hızlıca bulmak için tasarlanmıştır.
+
+    Args:
+        query (str): Sorgulanacak personelin adı. Kısmi veya tam isim girilebilir. Büyük/küçük harf duyarlılığı yoktur.
+
+    Returns:
+        str: Eşleşen personel kayıtlarının listesi. Her kayıt aşağıdaki bilgileri içerir:
+            - Personel adı
+            - Görev/rol
+        Eğer eşleşme bulunamazsa, uygun bir uyarı mesajı döner.
+    """
+
+    cursor = sqlite3.connect('./data/security_data.db').cursor()
+    cursor.execute("SELECT name, role, konum FROM staff WHERE name LIKE ?", ('%'+query+'%',))
+    matches = cursor.fetchall()
+    
+    if not matches:
+        return "Personel bilgisi bulunamadı."
+    
+    result = []
+    for match in matches:
+        result.append(f"Personel: {match[0]}, Rol: {match[1]}, Konum: {match[2]}")
+    
+    return "\n".join(result)

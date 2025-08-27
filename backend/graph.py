@@ -4,14 +4,14 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMe
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
-from tools import guest, cargo, security, door_control,which_guest_of_staff
+from tools import guest, cargo, security, door_control,which_guest_of_staff, staff_info
 from langchain_ollama import ChatOllama
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     kapı: str
     alarm: str
-tools = [guest, cargo, security, door_control,which_guest_of_staff]
+tools = [guest, cargo, security, door_control,which_guest_of_staff, staff_info]
 
 
 model = ChatOllama(model="gpt-oss", base_url="http://192.168.0.94:11434", temperature=0).bind_tools(tools)
