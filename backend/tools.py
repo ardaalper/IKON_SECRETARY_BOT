@@ -2,7 +2,14 @@ from langchain_core.tools import tool
 import sqlite3
 import os
 DB_CONN=sqlite3.connect('./data/security_data.db')
-
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from mailsender import send_email
+from dotenv import load_dotenv
+load_dotenv('./environment/.env')
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
 # ---- Araçlar (Tools) ----
 
 @tool
@@ -211,3 +218,44 @@ def staff_info(query: str) -> str:
         result.append(f"Personel: {match[0]}, Rol: {match[1]}, Konum: {match[2]}")
     
     return "\n".join(result)
+
+@tool
+def send_guest_email(guest_name: str, staff_name: str) -> str:
+    """
+    Misafirin görüşmek istediği personele otomatik e-posta gönderir.
+    
+    Kullanım:
+        Misafir geldiğinde, bu fonksiyon personelin e-posta adresini bulur ve
+        misafir ile ilgili mesajı gönderir.
+
+    Args:
+        guest_name (str): Misafirin adı
+        staff_name (str): Görüşmek istediği personelin adı
+    
+    Returns:
+        str: Mail gönderim sonucu mesajı.
+        
+    """
+    print(f"send_guest_email called with guest_name: {guest_name}, staff_name: {staff_name}")
+    # Veritabanından personelin e-posta adresini bul
+    cursor = sqlite3.connect('./data/security_data.db').cursor()
+    cursor.execute("SELECT mail FROM staff WHERE name LIKE ?", ('%'+staff_name+'%',))
+    staff = cursor.fetchone()
+    print("Fetched staff:", staff)  # Bu satır terminalde görünmeli
+
+    
+    if not staff:
+        return f"{staff_name} isimli personel bulunamadı."
+    
+    staff_email = staff[0]  # burası sadece 0 olmalı
+    print("Personel emaili:", staff_email)
+    if not staff_email:
+        return f"{staff_name} isimli personelin e-posta adresi kayıtlı değil."
+    
+    # Mail gönderimi
+    from_email = EMAIL_USER
+    password = EMAIL_PASS  # Gmail App Password kullanmalısın
+    subject = f"Yeni Misafir: {guest_name} geldi"
+    body = f"{guest_name} sizi görmek istiyor."
+    return_str = send_email(from_email, staff_email, password, subject, body) 
+    return return_str
