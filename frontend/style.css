@@ -82,6 +82,20 @@ h1, h2 {
     background-color: #0056b3;
 }
 
+#voice-btn {
+    padding: 10px 20px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#voice-btn:hover {
+    background-color: #1e7e34;
+}
+
 /* MESAJ STİLLERİ */
 .message {
     padding: 10px 15px;
@@ -150,3 +164,4 @@ h1, h2 {
         flex-direction: row; /* yan yana diz */
     }
 }
+

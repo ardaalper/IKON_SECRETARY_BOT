@@ -1,12 +1,10 @@
 import os
 from typing import Annotated, Sequence, TypedDict
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from tools import guest, cargo, security, door_control,which_guest_of_staff
-from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 
 class AgentState(TypedDict):
