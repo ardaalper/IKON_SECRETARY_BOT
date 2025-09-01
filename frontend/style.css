@@ -121,10 +121,10 @@ h1, h2 {
 .status-container {
     flex: 1;
     display: flex;
-    flex-direction: column; /* mobilde üst üste gelebilir */
+    flex-direction: column; /* Tüm elemanları alt alta sıralar */
     justify-content: center;
-    align-items: stretch;
-    gap: 20px;
+    align-items: center; /* Elemanları yatayda ortalar */
+    gap: 20px; /* Elemanlar arasına boşluk bırakır */
     padding: 20px;
     background-color: #f8f9fa;
     border-left: 1px solid #e0e0e0;
@@ -132,36 +132,47 @@ h1, h2 {
 }
 
 /* KAPI VE ALARM ALANLARI */
-.door-area, .alarm-area {
-    flex: 1;
+.door-area, 
+.alarm-area,
+.camera-stream { /* Kamera akışını da bu sınıfa ekledim */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 20px;
+    padding: 10px; /* İç boşluğu azalttım */
     background-color: #f8f9fa;
     border-radius: 10px;
 }
 
 /* KAPI VE ALARM BAŞLIKLARI */
-.door-area h2, .alarm-area h2 {
+.door-area h2, .alarm-area h2, .camera-stream h2 {
     margin-bottom: 10px;
 }
 
 /* RESİMLER AYNI BOYUT */
 #door-image, #alarm-image {
-    width: 100%;
+    width: 50%;
     max-width: 200px;
     height: auto;
     object-fit: contain;
     margin-top: 10px;
 }
 
-/* YAN YANA GÖRÜNÜM (GENİŞ EKRAN) */
-@media(min-width: 900px) {
-    .status-container {
-        flex-direction: row; /* yan yana diz */
-    }
+/* Video elementini de ortalamak için display block yaparız */
+#live-camera {
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px; /* Videoya da köşeli hatları ekledim */
 }
 
+/* YAN YANA GÖRÜNÜM (GENİŞ EKRAN) */
+@media(min-width: 900px) {
+    .container {
+        flex-direction: row; /* Yan yana diz */
+    }
+
+    .status-container {
+        flex-direction: column; /* Tüm statü öğelerini alt alta tutar */
+    }
+}

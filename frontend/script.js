@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const alarmSound= document.getElementById('alarm-sound');
     const alarmImage= document.getElementById('alarm-image');
     const voiceBtn  = document.getElementById('voice-btn');
+    const liveCamera = document.getElementById('live-camera');
 
     // Sohbet geçmişi
     let chatHistory = {
@@ -18,6 +19,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // API URL'i
     const API_URL = 'http://127.0.0.1:8000/chat';
 
+    const startCamera = async () => {
+        try {
+            // Kamera ve mikrofon erişimi için izin iste
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            liveCamera.srcObject = stream;
+        } catch (error) {
+            console.error('Kamera erişiminde hata oluştu:', error);
+            // Kullanıcıya bir hata mesajı gösterebilirsiniz
+            alert('Kamera açılamadı. Lütfen kamera erişimine izin verdiğinizden emin olun.');
+        }
+    };
+
+    // Sayfa yüklendiğinde kamerayı başlat
+    startCamera();
     // === TTS (Text-to-Speech) ===
     const speakText = (text) => {
         try {
