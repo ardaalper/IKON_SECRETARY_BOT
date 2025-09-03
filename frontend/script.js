@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const alarmImage= document.getElementById('alarm-image');
     const voiceBtn  = document.getElementById('voice-btn');
     const liveCamera = document.getElementById('live-camera');
-
     // Sohbet geçmişi
     let chatHistory = {
         messages: [],
@@ -16,8 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
         alarm: "Pasif"
     };
 
-    // API URL'i
-    const API_URL = 'http://127.0.0.1:8000/chat';
+    // API URL'leri
+    const CHAT_API_URL = 'http://127.0.0.1:8000/chat';
+    const CAMERA_API_URL = 'http://127.0.0.1:8000/camera_status';
 
     const startCamera = async () => {
         try {
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendBtn.disabled = true;
 
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetch(CHAT_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(chatHistory)
@@ -125,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chatHistory.kapı = data.kapı;
             updateDoorImage(chatHistory.kapı);
 
+            // Chat API'sinden gelen alarm durumunu doğrudan kullan
             chatHistory.alarm = data.alarm;
             updateAlarm(chatHistory.alarm);
             updateAlarmImage(chatHistory.alarm);
@@ -139,6 +140,47 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Kapı durumu geldi:", chatHistory.kapı);
     };
 
+    // === Kamera Analiz Durumunu Güncelleme ===
+    const updateCameraStatus = async () => {
+        try {
+            const response = await fetch(CAMERA_API_URL);
+            if (!response.ok) throw new Error('Kamera API yanıtı başarısız oldu.');
+            const data = await response.json();
+            
+            const cameraStatus = data.status;
+
+            // Eğer tehlike varsa alarmı aktif et
+            if (cameraStatus === "Aktif") {
+                // Sadece durum değiştiyse mesaj ekle
+                if (chatHistory.alarm !== "Aktif") {
+                    appendMessage("⚠️ Güvenlik sistemi bir tehlike tespit etti! Alarm aktif edildi.", 'ai');
+                    chatHistory.alarm = "Aktif";
+                    updateAlarm(chatHistory.alarm);
+                    updateAlarmImage(chatHistory.alarm);
+                }
+            } else if (cameraStatus === "Pasif") {
+                // Tehlike yoksa alarmı pasif yap
+                if (chatHistory.alarm === "Aktif") {
+                    appendMessage("✅ Tehlike durumu ortadan kalktı. Alarm pasif hale getirildi.", 'ai');
+                    chatHistory.alarm = "Pasif";
+                    updateAlarm(chatHistory.alarm);
+                    updateAlarmImage(chatHistory.alarm);
+                }
+            }
+        } catch (error) {
+            console.error('Kamera analiz hatası:', error);
+            // Hata durumunda da alarmı pasif yapabiliriz
+            if (chatHistory.alarm === "Aktif") {
+                chatHistory.alarm = "Pasif";
+                updateAlarm(chatHistory.alarm);
+                updateAlarmImage(chatHistory.alarm);
+            }
+        }
+    };
+
+    // Her 3 saniyede bir kamera durumunu kontrol et
+    setInterval(updateCameraStatus, 7000); // 3000 ms = 3 saniye
+
     // === STT (Speech-to-Text) ===
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
@@ -147,8 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (SR) {
         recognition = new SR();
         recognition.lang = 'tr-TR';
-        recognition.continuous = true;       // butonla durdurulana kadar dinlesin
-        recognition.interimResults = false;  // sadece final sonuçlar gelsin
+        recognition.continuous = true;
+        recognition.interimResults = false;
 
         recognition.onstart = () => {
             listening = true;
@@ -162,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onerror = (event) => {
             console.error('STT Hatası:', event.error);
-            // Hata olursa dinlemeyi kapat
             listening = false;
             if (voiceBtn) voiceBtn.textContent = '🎤 Konuş';
         };
@@ -200,9 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (!listening) {
-                recognition.start();   // başlat
+                recognition.start();
             } else {
-                recognition.stop();    // durdur
+                recognition.stop();
             }
         });
     }
