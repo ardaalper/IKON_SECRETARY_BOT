@@ -48,7 +48,8 @@ analysis_lock = threading.Lock()
 
 
 # Yolo modeli yükle
-yolo_model_path = "best.pt"  # senin eğittiğin model
+yolo_model_path = "best_harmfulobjects.pt"  # senin eğittiğin model
+model_classes =  ['Axe', 'Chainsaw', 'Chisel', 'Coin', 'Drink', 'Dumbbell', 'Fork', 'Hammer', 'Knife', 'Scissors', 'Screwdriver', 'Stapler']
 yolo_model = YOLO(yolo_model_path)
 
 def analyze_camera_in_background():
@@ -81,9 +82,9 @@ def analyze_camera_in_background():
                     detected_objects.append(yolo_model.names[cls_id].lower())
 
             # Tehlike kontrolü
-            danger_keywords = ['0', '1', '2', 0, 1, 2]  # senin tehlike listene göre
+            danger_keywords = ['axe', 'chainsaw', 'chisel', 'fork', 'hammer', 'knife', 'scissors', 'screwdriver']  # senin tehlike listene göre
             is_dangerous = any(obj in danger_keywords for obj in detected_objects)
-            
+            print(f"Tespit Edilen Nesneler: {detected_objects} | Tehlike: {is_dangerous}")
             new_status = "Aktif" if is_dangerous else "Pasif"
 
             if new_status != last_alarm_status:

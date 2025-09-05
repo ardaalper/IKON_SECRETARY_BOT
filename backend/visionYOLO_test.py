@@ -4,7 +4,7 @@ from PIL import Image
 import tempfile
 
 # Load model
-model = YOLO("best.pt")
+model = YOLO("best_harmfulobjects.pt")
 
 st.title("YOLO Object Detection Demo")
 st.write("Upload an image and see the detections.")
