@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateAlarm(chatHistory.alarm);
                     updateAlarmImage(chatHistory.alarm);
                 }
-            } else if (cameraStatus === "Pasif") {
+            } /*else if (cameraStatus === "Pasif") {
                 // Tehlike yoksa alarmı pasif yap
                 if (chatHistory.alarm === "Aktif") {
                     appendMessage("✅ Tehlike durumu ortadan kalktı. Alarm pasif hale getirildi.", 'ai');
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateAlarm(chatHistory.alarm);
                     updateAlarmImage(chatHistory.alarm);
                 }
-            }
+            }*/
         } catch (error) {
             console.error('Kamera analiz hatası:', error);
             // Hata durumunda da alarmı pasif yapabiliriz
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Her 3 saniyede bir kamera durumunu kontrol et
-    setInterval(updateCameraStatus, 7000); // 3000 ms = 3 saniye
+    setInterval(updateCameraStatus, 1000); // 3000 ms = 3 saniye
 
     // === STT (Speech-to-Text) ===
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

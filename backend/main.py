@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from graph import get_graph
-
+from ultralytics import YOLO
 import cv2
 import base64
 import ollama
@@ -40,15 +40,19 @@ compiled_graph = get_graph()
 # === KAMERA ANALİZİ İÇİN YENİ BÖLÜM ===
 # Son analiz sonucunu tutacak global değişken
 last_alarm_status = "Pasif"
-# Ollama sunucusunun adresi ve modeli
-ollama_host = 'http://192.168.0.94:11434'
-model_name = 'qwen2.5vl'
-client = ollama.Client(host=ollama_host)
+
+
 # Kilitleme mekanizması (thread güvenliği için)
 analysis_lock = threading.Lock()
 
+
+
+# Yolo modeli yükle
+yolo_model_path = "best.pt"  # senin eğittiğin model
+yolo_model = YOLO(yolo_model_path)
+
 def analyze_camera_in_background():
-    """Arka planda sürekli olarak kamera görüntüsünü analiz eden fonksiyon."""
+    """Arka planda sürekli olarak kamera görüntüsünü analiz eden fonksiyon (YOLO tabanlı)."""
     global last_alarm_status
     print("Kamera analiz thread'i başlatılıyor...")
     
@@ -66,45 +70,33 @@ def analyze_camera_in_background():
                 time.sleep(1)
                 continue
 
-            # Görüntüyü base64 formatına çevir
-            _, buffer = cv2.imencode('.jpg', frame)
-            image_base64 = base64.b64encode(buffer).decode('utf-8')
+            # YOLO tespiti
+            results = yolo_model.predict(source=frame, conf=0.8, verbose=False)  # conf eşik değeri
+            detected_objects = []
+            for r in results:
+                for box in r.boxes:
+                    cls_id = int(box.cls[0])
+                    # Senin dataset'inde 0,1,2 vs sınıf idleri var
+                    # Eğer sınıf tehlike içeriyorsa alarm aktif
+                    detected_objects.append(yolo_model.names[cls_id].lower())
 
-            # Tehlike tespiti için prompt
-            prompt_text = "Bu resimde tehlike oluşturabilecek bir durum veya nesne var mı? Örneğin: ateş, duman, silah, yaralı insan, bıçak, makas gibi. Varsa kısaca açıkla, yoksa 'tehlike yok' yaz."
+            # Tehlike kontrolü
+            danger_keywords = ['0', '1', '2', 0, 1, 2]  # senin tehlike listene göre
+            is_dangerous = any(obj in danger_keywords for obj in detected_objects)
+            
+            new_status = "Aktif" if is_dangerous else "Pasif"
 
-            try:
-                response = client.generate(
-                    model=model_name,
-                    prompt=prompt_text,
-                    images=[image_base64]
-                )
-                analysis_text_raw = response['response'].strip().lower()
-                
-                # 'tehlike yok' ifadesini dikkate alın
-                if "tehlike yok" in analysis_text_raw:
-                    new_status = "Pasif"
+            if new_status != last_alarm_status:
+                if new_status == "Aktif":
+                    print("\n❗ TEHLİKE TESPİT EDİLDİ ❗", detected_objects)
                 else:
-                    danger_keywords = ['bıçak', 'yangın', 'duman', 'silah', 'yaralı', 'kaza', 'makas']
-                    is_dangerous = any(keyword in analysis_text_raw for keyword in danger_keywords)
-                    if is_dangerous:
-                        new_status = "Aktif"
-                    else:
-                        new_status = "Pasif"
+                    print("✅ Güvenli")
 
-                if new_status != last_alarm_status:
-                    if new_status == "Aktif":
-                        print("\n❗ TEHLİKE TESPİT EDİLDİ ❗")
-                    else:
-                        print("✅ Güvenli")
-                
-                last_alarm_status = new_status
-            except Exception as e:
-                print(f"Ollama'ya bağlanırken bir hata oluştu: {e}")
-                last_alarm_status = "Hata"
+            last_alarm_status = new_status
         
-        # Her 3 saniyede bir analiz yap
-        time.sleep(10) 
+        time.sleep(1)
+        print("Kamera analiz thread'i çalışıyor...")
+
 
 # Flask API uç noktası
 @app.get("/")
@@ -131,7 +123,7 @@ async def handle_chat(chat_history: ChatHistory):
     last_alarm_status = agent_state["alarm"]
     async for s in compiled_graph.astream(agent_state, stream_mode="values"):
         message = s["messages"][-1]
-        
+        last_alarm_status = "Pasif"
         if isinstance(message, AIMessage):
             if message.content:
                 final_message_content = message.content
@@ -140,10 +132,9 @@ async def handle_chat(chat_history: ChatHistory):
                 updated_kapı_status = "Açık"
             elif "kapı kapatılıyor" in message.content.lower():
                 updated_kapı_status = "Kapalı"
-        if "emergency" in message.content.lower():
-            last_alarm_status = "Aktif"
-        else:
-            last_alarm_status = "Pasif"
+            if "emergency" in message.content.lower():
+                last_alarm_status = "Aktif"
+            
     response_history = ChatHistory(
         messages=[Message(content=final_message_content, type="ai")],
         kapı=updated_kapı_status,
