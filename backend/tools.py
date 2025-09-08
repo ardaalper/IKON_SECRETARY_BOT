@@ -30,7 +30,7 @@ def guest(query: str) -> str:
             - Not
         Eğer eşleşme bulunamazsa, uygun bir uyarı mesajı döner.
     """
-
+    
     cursor = sqlite3.connect('./data/security_data.db').cursor()
     cursor.execute("SELECT name, personnel_name, arrival_date, status, note FROM guests WHERE name LIKE ?", ('%'+query+'%',))
     matches = cursor.fetchall()
@@ -66,7 +66,15 @@ def which_guest_of_staff(query: str, password: str = None) -> str:
         Eğer eşleşme bulunamazsa veya şifre yanlışsa, açıklayıcı bir uyarı mesajı döner.
     """
 
-
+    ###########
+    # Önce personel var mı diye kontrol et
+    cursor = sqlite3.connect('./data/security_data.db').cursor()
+    cursor.execute("SELECT name FROM staff WHERE name LIKE ?", ('%'+query+'%',))
+    staff_exists = cursor.fetchone()
+    
+    if not staff_exists:
+        return f"{query} isimli personel bulunamadı."
+    ###########
     if password == "2728":  # Buraya istediğiniz şifreyi yazabilirsiniz
         cursor = sqlite3.connect('./data/security_data.db').cursor()
         cursor.execute("SELECT name, personnel_name, arrival_date, status, note FROM guests WHERE personnel_name LIKE ?", ('%'+query+'%',))
@@ -220,22 +228,31 @@ def staff_info(query: str) -> str:
     return "\n".join(result)
 
 @tool
-def send_guest_email(guest_name: str, staff_name: str) -> str:
+def send_guest_email( staff_name: str , guest_name: str = "", content_text: str = "") -> str:
     """
     Misafirin görüşmek istediği personele otomatik e-posta gönderir.
     
     Kullanım:
         Misafir geldiğinde, bu fonksiyon personelin e-posta adresini bulur ve
-        misafir ile ilgili mesajı gönderir.
+        misafir ile ilgili mesajı gönderir. Mesajın içeriğini chat mesajlarından alır.
 
     Args:
         guest_name (str): Misafirin adı
         staff_name (str): Görüşmek istediği personelin adı
-    
+        content_text (str): Gönderilecek e-posta içeriği
     Returns:
         str: Mail gönderim sonucu mesajı.
         
     """
+    ###########
+    # Önce personel var mı diye kontrol et
+    cursor = sqlite3.connect('./data/security_data.db').cursor()
+    cursor.execute("SELECT name FROM staff WHERE name LIKE ?", ('%'+staff_name+'%',))
+    staff_exists = cursor.fetchone()
+    
+    if not staff_exists:
+        return f"{staff_name} isimli personel bulunamadı."
+    ###########
     print(f"send_guest_email called with guest_name: {guest_name}, staff_name: {staff_name}")
     # Veritabanından personelin e-posta adresini bul
     cursor = sqlite3.connect('./data/security_data.db').cursor()
@@ -256,6 +273,6 @@ def send_guest_email(guest_name: str, staff_name: str) -> str:
     from_email = EMAIL_USER
     password = EMAIL_PASS  # Gmail App Password kullanmalısın
     subject = f"Yeni Misafir: {guest_name} geldi"
-    body = f"{guest_name} sizi görmek istiyor."
+    body = content_text
     return_str = send_email(from_email, staff_email, password, subject, body) 
     return return_str

@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const alarmImage= document.getElementById('alarm-image');
     const voiceBtn  = document.getElementById('voice-btn');
     const liveCamera = document.getElementById('live-camera');
+    const passwordAttemptsDisplay = document.getElementById('password-attempts-display'); // Bu satırı ekleyin
     // Sohbet geçmişi
     let chatHistory = {
         messages: [],
@@ -94,6 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Şifre deneme sayacını güncelle
+    const updatePasswordAttempts = (attempts) => {
+        if (passwordAttemptsDisplay) {
+            passwordAttemptsDisplay.textContent = `Şifre Deneme: ${attempts}`;
+        }
+    };
+
     // API'ye mesaj gönder
     const sendMessage = async () => {
         const messageText = userInput.value.trim();
@@ -132,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAlarmImage(chatHistory.alarm);
 
             chatHistory.password_attempts = data.password_attempts;
+            updatePasswordAttempts(chatHistory.password_attempts);
         } catch (error) {
             console.error('Hata:', error);
             appendMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', 'ai');
@@ -252,4 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Başlangıç mesajı
     appendMessage('Merhaba! Ben sekreter bot. Size nasıl yardımcı olabilirim?', 'ai');
+    // Sayfa yüklendiğinde şifre deneme sayacını ayarla
+    updatePasswordAttempts(chatHistory.password_attempts); // Bu satırı ekleyin
 });
