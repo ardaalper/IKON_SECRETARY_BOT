@@ -67,7 +67,7 @@ def which_guest_of_staff(query: str, password: str = None) -> str:
     """
 
 
-    if password == "1234":  # Buraya istediğiniz şifreyi yazabilirsiniz
+    if password == "2728":  # Buraya istediğiniz şifreyi yazabilirsiniz
         cursor = sqlite3.connect('./data/security_data.db').cursor()
         cursor.execute("SELECT name, personnel_name, arrival_date, status, note FROM guests WHERE personnel_name LIKE ?", ('%'+query+'%',))
         matches = cursor.fetchall()
@@ -79,9 +79,9 @@ def which_guest_of_staff(query: str, password: str = None) -> str:
         for match in matches:
             result.append(f"Misafir: {match[0]}, İlgili Kişi: {match[1]}, Varış: {match[2]}, Durum: {match[3]}, Not: {match[4]}")
         
-        return "\n".join(result)
+        return "sifre dogru" + "\n".join(result)
     else:
-        return "Bilgi almak için şifre gereklidir. Lütfen şifreyi giriniz."
+        return "hatalı sifre."
 
 @tool
 def cargo(query: str) -> str:
@@ -179,11 +179,11 @@ def door_control(query: str, password: str = None) -> str:
     
     # Şifre Kontrolü
     if any(phrase in query_lower for phrase in open_keywords):
-        if password == "1234":  # Buraya istediğiniz şifreyi yazabilirsiniz
+        if password == "2728":  # Buraya istediğiniz şifreyi yazabilirsiniz
 
             return "Şifre doğru. Kapı açılıyor. Hoş geldiniz."
         else:
-            return "Kapıyı açmak için şifre gereklidir. Lütfen şifreyi giriniz."
+            return "hatalı sifre."
     
     elif any(phrase in query_lower for phrase in close_keywords):
         return "Kapı kapatılıyor. Güle güle."

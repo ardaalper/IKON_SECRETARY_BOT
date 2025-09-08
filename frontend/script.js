@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let chatHistory = {
         messages: [],
         kapı: "Kapalı",
-        alarm: "Pasif"
+        alarm: "Pasif",
+        password_attempts: 0
     };
 
     // API URL'leri
@@ -130,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAlarm(chatHistory.alarm);
             updateAlarmImage(chatHistory.alarm);
 
+            chatHistory.password_attempts = data.password_attempts;
         } catch (error) {
             console.error('Hata:', error);
             appendMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', 'ai');

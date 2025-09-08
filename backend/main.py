@@ -33,6 +33,7 @@ class ChatHistory(BaseModel):
     messages: List[Message]
     kapı: str = "Kapalı"
     alarm: str = "Pasif"
+    password_attempts: int = 0
 
 # LangGraph uygulamasını bir kez derle
 compiled_graph = get_graph()
@@ -55,7 +56,7 @@ yolo_model = YOLO(yolo_model_path)
 def analyze_camera_in_background():
     """Arka planda sürekli olarak kamera görüntüsünü analiz eden fonksiyon (YOLO tabanlı)."""
     global last_alarm_status
-    print("Kamera analiz thread'i başlatılıyor...")
+    # print("Kamera analiz thread'i başlatılıyor...") 
     
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -84,7 +85,7 @@ def analyze_camera_in_background():
             # Tehlike kontrolü
             danger_keywords = ['axe', 'chainsaw', 'chisel', 'fork', 'hammer', 'knife', 'scissors', 'screwdriver']  # senin tehlike listene göre
             is_dangerous = any(obj in danger_keywords for obj in detected_objects)
-            print(f"Tespit Edilen Nesneler: {detected_objects} | Tehlike: {is_dangerous}")
+            #print(f"Tespit Edilen Nesneler: {detected_objects} | Tehlike: {is_dangerous}")
             new_status = "Aktif" if is_dangerous else "Pasif"
 
             if new_status != last_alarm_status:
@@ -96,7 +97,7 @@ def analyze_camera_in_background():
             last_alarm_status = new_status
         
         time.sleep(1)
-        print("Kamera analiz thread'i çalışıyor...")
+        #print("Kamera analiz thread'i çalışıyor...")
 
 
 # Flask API uç noktası
@@ -116,30 +117,46 @@ async def handle_chat(chat_history: ChatHistory):
     agent_state = {
         "messages": langgraph_messages,
         "kapı": chat_history.kapı,
-        "alarm": chat_history.alarm # Sohbet yanıtına en son alarm durumunu ekle
+        "alarm": chat_history.alarm, # Sohbet yanıtına en son alarm durumunu ekle
+        "password_attempts": chat_history.password_attempts
     }
 
     final_message_content = ""
     updated_kapı_status = agent_state["kapı"]
-    last_alarm_status = agent_state["alarm"]
+    last_alarm_status = "Pasif"
+    last_password_attempts = agent_state["password_attempts"]
+    
     async for s in compiled_graph.astream(agent_state, stream_mode="values"):
         message = s["messages"][-1]
-        last_alarm_status = "Pasif"
+        
         if isinstance(message, AIMessage):
             if message.content:
                 final_message_content = message.content
         elif isinstance(message, ToolMessage):
             if "kapı açılıyor" in message.content.lower():
                 updated_kapı_status = "Açık"
-            elif "kapı kapatılıyor" in message.content.lower():
+                last_password_attempts = 0
+                last_alarm_status = "Pasif"
+            if "kapı kapatılıyor" in message.content.lower():
                 updated_kapı_status = "Kapalı"
             if "emergency" in message.content.lower():
                 last_alarm_status = "Aktif"
+            if "sifre dogru" in message.content.lower():
+                last_password_attempts = 0
+                last_alarm_status = "Pasif"
+            if "hatalı sifre." in message.content.lower():
+                last_password_attempts += 1
+            if last_password_attempts >= 3:
+                last_alarm_status = "Aktif"
+                print("❗ 3 HATALI ŞİFRE GİRİLDİ, ALARM AKTİF ❗")
+                last_password_attempts = 0  # Reset attempts after alarm
+        print(":::" + str(last_password_attempts))
             
     response_history = ChatHistory(
         messages=[Message(content=final_message_content, type="ai")],
         kapı=updated_kapı_status,
-        alarm=last_alarm_status # Nihai alarm durumunu döndür
+        alarm=last_alarm_status, # Nihai alarm durumunu döndür
+        password_attempts=last_password_attempts
     )
     
     return response_history

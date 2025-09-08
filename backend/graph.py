@@ -11,6 +11,7 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     kapı: str
     alarm: str
+    password_attempts: int
 tools = [guest, cargo, security, door_control,which_guest_of_staff, staff_info, send_guest_email]
 
 
@@ -24,8 +25,9 @@ def call_model(state: AgentState) -> AgentState:
     # Kapı durumu bilgisini içeren bir SystemMessage oluştur
     door_status_message = SystemMessage(content=f"Mevcut durumda, kapı: {state['kapı']}.")
     alarm_status_message = SystemMessage(content=f"Mevcut durumda, alarm: {state['alarm']}.")
+    password_attempts_message = SystemMessage(content=f"Mevcut durumda, parola deneme sayısı: {state['password_attempts']}.")   
     # Model çağrısı için mesaj listesini oluştur
-    messages_to_send = [system_prompt, door_status_message, alarm_status_message] + state["messages"]
+    messages_to_send = [system_prompt, door_status_message, alarm_status_message, password_attempts_message] + state["messages"]
     response = model.invoke(messages_to_send)
 
     return {"messages": [response]}
