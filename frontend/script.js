@@ -9,6 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceBtn  = document.getElementById('voice-btn');
     const liveCamera = document.getElementById('live-camera');
     const passwordAttemptsDisplay = document.getElementById('password-attempts-display'); // Bu satırı ekleyin
+    
+    // Yeni DOM elemanlarını seçme
+    const adminPanelBtn     = document.getElementById('admin-panel-btn');
+    const passwordModal     = document.getElementById('password-modal');
+    const closeBtn          = document.querySelector('.close-btn');
+    const passwordInput     = document.getElementById('password-input');
+    const passwordSubmitBtn = document.getElementById('password-submit-btn');
+    const passwordErrorMsg  = document.getElementById('password-error-msg');
+
     // Sohbet geçmişi
     let chatHistory = {
         messages: [],
@@ -259,6 +268,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Admin paneli ile ilgili kodlar.  /////////////////////////////////////////////
+    if (adminPanelBtn) {
+        adminPanelBtn.addEventListener('click', () => {
+            passwordModal.style.display = 'flex'; // Pop-up'ı göster
+            passwordInput.value = ''; // Giriş alanını temizle
+            passwordErrorMsg.textContent = ''; // Hata mesajını temizle
+        });
+    }
+
+    // Kapatma butonuna tıklama olayı
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            passwordModal.style.display = 'none'; // Pop-up'ı gizle
+        });
+    }
+
+    // Modala tıklandığında kapanmasını sağla (dışarıya tıklanırsa)
+    window.addEventListener('click', (event) => {
+        if (event.target === passwordModal) {
+            passwordModal.style.display = 'none';
+        }
+    });
+
+    // Şifre gönderme butonu olayı
+    if (passwordSubmitBtn) {
+        passwordSubmitBtn.addEventListener('click', async () => {
+            const enteredPassword = passwordInput.value;
+            const ADMIN_API_URL = 'http://127.0.0.1:8000/admin/login'; // Yeni login endpoint'i
+
+            try {
+                const response = await fetch(ADMIN_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: enteredPassword })
+                });
+
+                if (response.ok) {
+                    // Şifre doğruysa, admin sayfasına yönlendir
+                    passwordErrorMsg.textContent = '';
+                    passwordModal.style.display = 'none';
+                    window.location.href = 'admin.html';
+                } else {
+                    // Hata durumunda (yanlış şifre), hata mesajını göster
+                    const errorData = await response.json();
+                    passwordErrorMsg.textContent = errorData.detail || 'Hatalı şifre. Lütfen tekrar deneyin.';
+                }
+            } catch (error) {
+                console.error('API Hatası:', error);
+                passwordErrorMsg.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+            }
+        });
+    }
     // Başlangıç mesajı
     appendMessage('Merhaba! Ben sekreter bot. Size nasıl yardımcı olabilirim?', 'ai');
     // Sayfa yüklendiğinde şifre deneme sayacını ayarla

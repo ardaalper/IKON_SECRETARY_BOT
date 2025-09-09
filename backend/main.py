@@ -6,10 +6,9 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from graph import get_graph
 from ultralytics import YOLO
 import cv2
-import base64
-import ollama
 import time
 import threading
+from database import get_all_records
 
 # FastAPI uygulamasını oluşturun
 app = FastAPI()
@@ -174,3 +173,39 @@ async def startup_event():
     # Kamera analizini arka planda ayrı bir thread'de başlat
     analysis_thread = threading.Thread(target=analyze_camera_in_background, daemon=True)
     analysis_thread.start()
+
+# --- ADMIN PANELİ İÇİN YENİ UÇ NOKTA: VERİLERİ GÖRÜNTÜLEME ---
+
+
+@app.get("/admin/records")
+async def get_all_security_records():
+    """
+    Veritabanındaki tüm güvenlik kayıtlarını döndürür.
+    Bu endpoint, database.py dosyasındaki get_all_records fonksiyonunu kullanır.
+    """
+    try:
+        records = get_all_records()
+        return {"records": records}
+    except Exception as e:
+        # Hata durumunda, istemciye 500 Internal Server Error döndürür
+        raise HTTPException(status_code=500, detail=f"Veritabanı okunurken bir hata oluştu: {str(e)}")
+    
+# --- ADMIN PANELİ GİRİŞİ İÇİN ŞİFRE KONTROL ENDPOINT'İ ---
+
+# Basit bir admin şifresi
+ADMIN_PASSWORD = "admin123"
+
+# Şifre kontrolü için Pydantic modeli
+class AdminData(BaseModel):
+    password: str
+
+@app.post("/admin/login")
+async def admin_login(admin_data: AdminData):
+    """
+    Admin paneli için şifre kontrolü yapar.
+    """
+    if admin_data.password == ADMIN_PASSWORD:
+        return {"message": "Giriş başarılı."}
+    else:
+        # Şifre yanlışsa 401 Unauthorized hatası döndürür
+        raise HTTPException(status_code=401, detail="Hatalı şifre.")

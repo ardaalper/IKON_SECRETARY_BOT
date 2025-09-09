@@ -65,4 +65,35 @@ def setup_database():
     conn.commit()
     return conn
 
-#setup_database()
+def get_db_connection():
+    """Mevcut veritabanı dosyasına bağlantı kurar."""
+    # security_data.db dosyasının var olan konumunu belirtin
+    return sqlite3.connect('data/security_data.db')
+
+# ---- Kayıtları Çekme Fonksiyonu ----
+def get_all_records():
+    """
+    Var olan veritabanındaki tüm tabloların verilerini döndürür.
+    """
+    # Her seferinde sıfırdan database oluşturmak yerine var olan dosyaya bağlanır.
+    # Bu satırı değiştirdik: `conn = setup_database()` yerine `get_db_connection()` kullanıldı.
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Eğer database.py dosyanızda bu tablolar varsa
+    tables = ["guests", "cargos", "emergencies", "staff"]
+    records = {}
+
+    for table in tables:
+        try:
+            cursor.execute(f"SELECT * FROM {table}")
+            col_names = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            records[table] = [dict(zip(col_names, row)) for row in rows]
+        except sqlite3.OperationalError:
+            # Eğer tablo bulunamazsa, bu hatayı yakala ve atla
+            print(f"Uyarı: '{table}' tablosu bulunamadı.")
+            records[table] = [] # Boş bir liste ekle
+
+    conn.close()
+    return records
