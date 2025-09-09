@@ -176,3 +176,89 @@ h1, h2 {
         flex-direction: column; /* Tüm statü öğelerini alt alta tutar */
     }
 }
+
+#admin-panel-btn {
+    position: fixed;
+    top: 24px;
+    right: 32px;
+    z-index: 1000;
+    background-color: #3f51b5;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(63,81,181,0.15);
+    transition: background 0.2s;
+}
+#admin-panel-btn:hover {
+    background-color: #283593;
+}
+
+/* ...existing code... */
+
+.modal {
+    position: fixed;
+    top: 40px;           /* Üstten boşluk */
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 2000;
+    width: 350px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    padding: 0;
+    animation: fadeIn 0.2s;
+}
+
+.modal-content {
+    padding: 24px 24px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 22px;
+    color: #888;
+    cursor: pointer;
+}
+
+#password-input {
+    margin: 12px 0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 80%;
+    font-size: 16px;
+}
+
+#password-submit-btn {
+    background: #3f51b5;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+}
+
+#password-submit-btn:hover {
+    background: #283593;
+}
+
+.error-message {
+    color: #f44336;
+    margin-top: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* ...existing code... */

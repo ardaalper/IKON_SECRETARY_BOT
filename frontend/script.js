@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (passwordSubmitBtn) {
         passwordSubmitBtn.addEventListener('click', async () => {
             const enteredPassword = passwordInput.value;
-            const ADMIN_API_URL = 'http://127.0.0.1:8000/admin/login'; // Yeni login endpoint'i
+            const ADMIN_API_URL = 'http://127.0.0.1:8000/admin/login';
 
             try {
                 const response = await fetch(ADMIN_API_URL, {
@@ -305,12 +305,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    // Şifre doğruysa, admin sayfasına yönlendir
                     passwordErrorMsg.textContent = '';
                     passwordModal.style.display = 'none';
-                    window.location.href = 'admin.html';
+                    window.open('admin.html', '_blank'); // Yeni sekmede aç
                 } else {
-                    // Hata durumunda (yanlış şifre), hata mesajını göster
                     const errorData = await response.json();
                     passwordErrorMsg.textContent = errorData.detail || 'Hatalı şifre. Lütfen tekrar deneyin.';
                 }
