@@ -1,6 +1,4 @@
-Herkese selam,
-
-Sekreter projesini Ikon Arge firmasında staj yaparken geliştirdim. Projenin amacı, bir ofiste kapıcı/sekreter işlevi görecek yapay zeka entegrasyonu yapmak.
+Projenin amacı, bir ofiste kapıcı/sekreter işlevi görecek yapay zeka entegrasyonu yapmak.
 
 Projede kullandığım llm modeli: GPT-OSS:20b OLLAMA
 
