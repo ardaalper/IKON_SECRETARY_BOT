@@ -1,5 +1,5 @@
 import sqlite3
-
+import os
 
 # ---- Veritabanı Oluşturma ve Hazırlama Fonksiyonu ----
 def setup_database():
@@ -8,13 +8,16 @@ def setup_database():
     Bu fonksiyon, veritabanı dosyası yoksa oluşturur ve örnek verileri ekler.
     Var olan verilere dokunmaz.
     """
-    conn = sqlite3.connect('security_data.db')
+    if not os.path.exists('data'):
+        os.makedirs('data')
+        
+    conn = sqlite3.connect('data/security_data.db')
     cursor = conn.cursor()
 
     # Veritabanı tablolarının var olup olmadığını kontrol edin
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='guests'")
     if not cursor.fetchone():
-        # Misafirler tablosunu oluşturun ve verileri ekleyin
+        # Misafirler tablosunu oluşturun
         cursor.execute("""
             CREATE TABLE guests (
                 id INTEGER PRIMARY KEY,
@@ -28,7 +31,7 @@ def setup_database():
         
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='cargos'")
     if not cursor.fetchone():
-        # Kargolar tablosunu oluşturun ve verileri ekleyin
+        # Kargolar tablosunu oluşturun
         cursor.execute("""
             CREATE TABLE cargos (
                 id INTEGER PRIMARY KEY,
@@ -41,7 +44,7 @@ def setup_database():
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='emergencies'")
     if not cursor.fetchone():
-        # Acil durumlar tablosunu oluşturun ve verileri ekleyin
+        # Acil durumlar tablosunu oluşturun
         cursor.execute("""
             CREATE TABLE emergencies (
                 id INTEGER PRIMARY KEY,
@@ -53,7 +56,7 @@ def setup_database():
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='staff'")
     if not cursor.fetchone():
-        # Personel/Güvenlik tablosunu oluşturun ve verileri ekleyin
+        # Personel/Güvenlik tablosunu oluşturun
         cursor.execute("""
             CREATE TABLE staff (
                 id INTEGER PRIMARY KEY,
@@ -67,7 +70,9 @@ def setup_database():
 
 def get_db_connection():
     """Mevcut veritabanı dosyasına bağlantı kurar."""
-    # security_data.db dosyasının var olan konumunu belirtin
+    # 'data' klasörünün varlığını kontrol et, yoksa oluştur.
+    if not os.path.exists('data'):
+        os.makedirs('data')
     return sqlite3.connect('data/security_data.db')
 
 # ---- Kayıtları Çekme Fonksiyonu ----
@@ -75,12 +80,9 @@ def get_all_records():
     """
     Var olan veritabanındaki tüm tabloların verilerini döndürür.
     """
-    # Her seferinde sıfırdan database oluşturmak yerine var olan dosyaya bağlanır.
-    # Bu satırı değiştirdik: `conn = setup_database()` yerine `get_db_connection()` kullanıldı.
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Eğer database.py dosyanızda bu tablolar varsa
     tables = ["guests", "cargos", "emergencies", "staff"]
     records = {}
 
@@ -91,9 +93,51 @@ def get_all_records():
             rows = cursor.fetchall()
             records[table] = [dict(zip(col_names, row)) for row in rows]
         except sqlite3.OperationalError:
-            # Eğer tablo bulunamazsa, bu hatayı yakala ve atla
             print(f"Uyarı: '{table}' tablosu bulunamadı.")
-            records[table] = [] # Boş bir liste ekle
+            records[table] = []
 
     conn.close()
     return records
+    
+# database.py
+def add_record(table_name, record_data):
+    """Belirtilen tabloya yeni bir kayıt ekler."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # SQL enjeksiyonunu önlemek için güvenli parametre kullanımı
+    columns = ', '.join(record_data.keys())
+    placeholders = ', '.join(['?' for _ in record_data])
+    values = tuple(record_data.values())
+
+    try:
+        # Sorguyu yazdırmak hata ayıklamada yardımcı olabilir
+        print(f"Executing SQL: INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) with values: {values}")
+        cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", values)
+        conn.commit()
+        return {"success": True, "message": "Kayıt başarıyla eklendi."}
+    except sqlite3.OperationalError as e:
+        # Hata mesajını daha açıklayıcı yapın
+        return {"success": False, "message": f"Kayıt ekleme hatası: {e}. Gönderilen veriler: {record_data}"}
+    except Exception as e:
+        return {"success": False, "message": f"Beklenmedik bir hata oluştu: {e}"}
+    finally:
+        conn.close()
+        
+# ---- YENİ: Kayıt Silme Fonksiyonu ----
+def delete_record(table_name, record_id):
+    """Belirtilen tablodaki ID'si verilen kaydı siler."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(f"DELETE FROM {table_name} WHERE id = ?", (record_id,))
+        conn.commit()
+        if cursor.rowcount > 0:
+            return {"success": True, "message": "Kayıt başarıyla silindi."}
+        else:
+            return {"success": False, "message": "Silinecek kayıt bulunamadı."}
+    except sqlite3.OperationalError as e:
+        return {"success": False, "message": f"Kayıt silme hatası: {e}"}
+    finally:
+        conn.close()

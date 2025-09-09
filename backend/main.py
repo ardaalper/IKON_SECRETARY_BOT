@@ -1,14 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from graph import get_graph
 from ultralytics import YOLO
 import cv2
 import time
 import threading
-from database import get_all_records
+from database import get_all_records, add_record, delete_record
 
 # FastAPI uygulamasını oluşturun
 app = FastAPI()
@@ -33,6 +33,16 @@ class ChatHistory(BaseModel):
     kapı: str = "Kapalı"
     alarm: str = "Pasif"
     password_attempts: int = 0
+    
+# Yeni CRUD Pydantic modelleri
+class RecordData(BaseModel):
+    table_name: str
+    record: Dict
+    
+class DeleteData(BaseModel):
+    table_name: str
+    record_id: int
+
 
 # LangGraph uygulamasını bir kez derle
 compiled_graph = get_graph()
@@ -41,11 +51,8 @@ compiled_graph = get_graph()
 # Son analiz sonucunu tutacak global değişken
 last_alarm_status = "Pasif"
 
-
 # Kilitleme mekanizması (thread güvenliği için)
 analysis_lock = threading.Lock()
-
-
 
 # Yolo modeli yükle
 yolo_model_path = "best_harmfulobjects.pt"  # senin eğittiğin model
@@ -55,7 +62,6 @@ yolo_model = YOLO(yolo_model_path)
 def analyze_camera_in_background():
     """Arka planda sürekli olarak kamera görüntüsünü analiz eden fonksiyon (YOLO tabanlı)."""
     global last_alarm_status
-    # print("Kamera analiz thread'i başlatılıyor...") 
     
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -72,19 +78,16 @@ def analyze_camera_in_background():
                 continue
 
             # YOLO tespiti
-            results = yolo_model.predict(source=frame, conf=0.8, verbose=False)  # conf eşik değeri
+            results = yolo_model.predict(source=frame, conf=0.8, verbose=False)
             detected_objects = []
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
-                    # Senin dataset'inde 0,1,2 vs sınıf idleri var
-                    # Eğer sınıf tehlike içeriyorsa alarm aktif
                     detected_objects.append(yolo_model.names[cls_id].lower())
 
             # Tehlike kontrolü
-            danger_keywords = ['axe', 'chainsaw', 'chisel', 'fork', 'hammer', 'knife', 'scissors', 'screwdriver']  # senin tehlike listene göre
+            danger_keywords = ['axe', 'chainsaw', 'chisel', 'fork', 'hammer', 'knife', 'scissors', 'screwdriver']
             is_dangerous = any(obj in danger_keywords for obj in detected_objects)
-            #print(f"Tespit Edilen Nesneler: {detected_objects} | Tehlike: {is_dangerous}")
             new_status = "Aktif" if is_dangerous else "Pasif"
 
             if new_status != last_alarm_status:
@@ -96,8 +99,6 @@ def analyze_camera_in_background():
             last_alarm_status = new_status
         
         time.sleep(1)
-        #print("Kamera analiz thread'i çalışıyor...")
-
 
 # Flask API uç noktası
 @app.get("/")
@@ -116,7 +117,7 @@ async def handle_chat(chat_history: ChatHistory):
     agent_state = {
         "messages": langgraph_messages,
         "kapı": chat_history.kapı,
-        "alarm": chat_history.alarm, # Sohbet yanıtına en son alarm durumunu ekle
+        "alarm": chat_history.alarm,
         "password_attempts": chat_history.password_attempts
     }
 
@@ -148,13 +149,13 @@ async def handle_chat(chat_history: ChatHistory):
             if last_password_attempts >= 3:
                 last_alarm_status = "Aktif"
                 print("❗ 3 HATALI ŞİFRE GİRİLDİ, ALARM AKTİF ❗")
-                last_password_attempts = 0  # Reset attempts after alarm
+                last_password_attempts = 0
         print(":::" + str(last_password_attempts))
             
     response_history = ChatHistory(
         messages=[Message(content=final_message_content, type="ai")],
         kapı=updated_kapı_status,
-        alarm=last_alarm_status, # Nihai alarm durumunu döndür
+        alarm=last_alarm_status,
         password_attempts=last_password_attempts
     )
     
@@ -175,37 +176,61 @@ async def startup_event():
     analysis_thread.start()
 
 # --- ADMIN PANELİ İÇİN YENİ UÇ NOKTA: VERİLERİ GÖRÜNTÜLEME ---
-
-
 @app.get("/admin/records")
 async def get_all_security_records():
-    """
-    Veritabanındaki tüm güvenlik kayıtlarını döndürür.
-    Bu endpoint, database.py dosyasındaki get_all_records fonksiyonunu kullanır.
-    """
+    """Veritabanındaki tüm güvenlik kayıtlarını döndürür."""
     try:
         records = get_all_records()
         return {"records": records}
     except Exception as e:
-        # Hata durumunda, istemciye 500 Internal Server Error döndürür
         raise HTTPException(status_code=500, detail=f"Veritabanı okunurken bir hata oluştu: {str(e)}")
     
 # --- ADMIN PANELİ GİRİŞİ İÇİN ŞİFRE KONTROL ENDPOINT'İ ---
-
-# Basit bir admin şifresi
 ADMIN_PASSWORD = "admin123"
 
-# Şifre kontrolü için Pydantic modeli
 class AdminData(BaseModel):
     password: str
 
 @app.post("/admin/login")
 async def admin_login(admin_data: AdminData):
-    """
-    Admin paneli için şifre kontrolü yapar.
-    """
+    """Admin paneli için şifre kontrolü yapar."""
     if admin_data.password == ADMIN_PASSWORD:
         return {"message": "Giriş başarılı."}
     else:
-        # Şifre yanlışsa 401 Unauthorized hatası döndürür
         raise HTTPException(status_code=401, detail="Hatalı şifre.")
+
+# main.py
+# ---- YENİ: KAYIT EKLEME ENDPOINT'İ ----
+@app.post("/admin/records/add")
+async def add_security_record(record_data: RecordData):
+    """
+    Belirtilen tabloya yeni bir güvenlik kaydı ekler.
+    """
+    try:
+        # Pydantic modeli sayesinde gelen veriyi otomatik olarak doğru formata alıyoruz
+        table_name = record_data.table_name
+        record = record_data.record
+        
+        result = add_record(table_name, record)
+        
+        if result["success"]:
+            return {"message": result["message"]}
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Kayıt ekleme hatası: {str(e)}")
+
+# ---- YENİ: KAYIT SİLME ENDPOINT'İ ----
+@app.delete("/admin/records/delete")
+async def delete_security_record(delete_data: DeleteData):
+    """
+    Belirtilen tablodan bir güvenlik kaydını ID'sine göre siler.
+    """
+    try:
+        result = delete_record(delete_data.table_name, delete_data.record_id)
+        if result["success"]:
+            return {"message": result["message"]}
+        else:
+            raise HTTPException(status_code=404, detail=result["message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Kayıt silme hatası: {str(e)}")
