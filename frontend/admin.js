@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const statusMessage = document.getElementById('status-message');
-    const recordsTable = document.getElementById('records-table');
-    const recordsTableBody = document.getElementById('records-table-body');
-
+    const adminContainer = document.querySelector('.admin-container'); // Ana kapsayıcıyı seçin
+    
     const API_URL = 'http://127.0.0.1:8000/admin/records';
 
     try {
@@ -12,44 +11,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const data = await response.json();
-        const tables = data.records; // API'den gelen sözlük
+        const tables = data.records;
+        
+        // Veritabanı bağlantısında hata varsa veya veri gelmezse
+        if (!tables || Object.keys(tables).length === 0) {
+            statusMessage.textContent = 'Veritabanında henüz kayıt bulunmamaktadır.';
+            return;
+        }
 
-        let recordCount = 0;
+        // Başlangıç mesajını gizle
+        statusMessage.style.display = 'none';
 
-        // Sözlükteki her bir tabloyu döngüye al
+        // Gelen her tablo için ayrı bir HTML tablosu oluştur
         for (const tableName in tables) {
             if (Object.hasOwnProperty.call(tables, tableName)) {
                 const records = tables[tableName];
 
+                // Yeni tablo için başlık ve kapsayıcı oluştur
+                const tableTitle = document.createElement('h2');
+                tableTitle.textContent = tableName.charAt(0).toUpperCase() + tableName.slice(1);
+                adminContainer.appendChild(tableTitle);
+
+                const tableContainer = document.createElement('div');
+                tableContainer.classList.add('record-table-container');
+
+                const table = document.createElement('table');
+                table.classList.add('records-table');
+
+                // Tablo başlıklarını (columns) oluştur
+                if (records.length > 0) {
+                    const headerRow = document.createElement('thead');
+                    const headers = Object.keys(records[0]);
+                    headerRow.innerHTML = `<tr>${headers.map(header => `<th>${header.charAt(0).toUpperCase() + header.slice(1)}</th>`).join('')}</tr>`;
+                    table.appendChild(headerRow);
+                }
+
+                // Tablo gövdesini (rows) oluştur
+                const tableBody = document.createElement('tbody');
                 records.forEach(record => {
                     const row = document.createElement('tr');
-                    const recordType = tableName; // Tablo adı, kayıt tipi olarak kullanılacak
-
-                    // Kaydın ID'sini, zamanını ve detaylarını oluştur
-                    let id = record.id || 'N/A';
-                    let timestamp = record.timestamp ? new Date(record.timestamp).toLocaleString('tr-TR') : 'N/A';
-                    let details = JSON.stringify(record, null, 2); // Tüm kaydı detaylar sütununa yerleştir
-
-                    // Eklenen tablodan bağımsız olarak her kayıt için yeni bir satır oluştur
-                    row.innerHTML = `
-                        <td>${id}</td>
-                        <td>${recordType.charAt(0).toUpperCase() + recordType.slice(1)}</td>
-                        <td>${timestamp}</td>
-                        <td><pre>${details}</pre></td>
-                    `;
-                    recordsTableBody.appendChild(row);
-                    recordCount++;
+                    const cells = Object.values(record);
+                    row.innerHTML = cells.map(cell => `<td>${cell}</td>`).join('');
+                    tableBody.appendChild(row);
                 });
+                table.appendChild(tableBody);
+                
+                tableContainer.appendChild(table);
+                adminContainer.appendChild(tableContainer);
             }
         }
-
-        if (recordCount > 0) {
-            statusMessage.style.display = 'none';
-            recordsTable.style.display = 'table';
-        } else {
-            statusMessage.textContent = 'Veritabanında henüz kayıt bulunmamaktadır.';
-        }
-
+        
     } catch (error) {
         console.error('Veri çekme hatası:', error);
         statusMessage.textContent = 'Veriler yüklenirken bir hata oluştu. Sunucuya ulaşılamıyor.';
