@@ -59,6 +59,119 @@ Modelimizin düzgün biçimde çalışabilmesi için gerekli kilit yapı. İçer
   olmadığını ve e-posta adresini kontrol eder. Eğer adres bulunursa, .env dosyasındaki e-posta kimlik bilgileriyle SMTP üzerinden mail
   gönderilir. Konu satırında misafir bilgisi, içerikte ise content_text yer alır.
 
+### MAILSENDER.PY
+
+Bu kod, bir Python programı içinde e-posta göndermeyi sağlayan bir fonksiyon tanımlar. send_email fonksiyonu, gönderen e-posta adresi 
+(from_email), alıcı e-posta adresi (to_email), gönderenin şifresi (password), konu (subject) ve içerik (body) parametrelerini alarak çalışır. 
+Fonksiyon ilk olarak bir MIMEMultipart nesnesi oluşturur; bu nesne sayesinde hem metin hem de görsel gibi farklı içerikler aynı e-postaya 
+eklenebilir. Mesajın konu, gönderen ve alıcı bilgileri bu nesneye eklenir. Ardından e-posta gövdesi düz metin olarak eklenir. Eğer belirlenen 
+dizinde (./data/ikon_logo.png) bir görsel dosyası varsa, bu görsel okunup MIMEImage kullanılarak e-postaya eklenir ve inline (gömülü) görsel 
+olarak gönderilecek şekilde ayarlanır. E-posta gönderme işlemi için smtplib kütüphanesiyle Gmail’in SMTP sunucusuna (smtp.gmail.com, port 587) 
+bağlanılır, TLS şifreleme başlatılır ve kullanıcı adı-şifre ile giriş yapılır. Giriş başarılı olursa hazırlanan mesaj gönderilir ve bağlantı 
+kapatılır. İşlem başarılı olursa ekrana ve dönüş değerine başarı mesajı yazdırılır; bir hata olursa hata mesajı yakalanır ve kullanıcıya 
+bildirilir. Bu sayede fonksiyon, hem yazılı mesaj hem de görsel içerebilen güvenli bir e-posta gönderme mekanizması sağlar.
+
+### DATABASE.PY
+
+- **setup_database()** fonksiyonu, eğer yoksa data klasörünü oluşturur ve içinde security_data.db adında bir SQLite veritabanı açar.
+  Veritabanında daha önce tablolar oluşturulmamışsa guests, cargos, emergencies ve staff tablolarını oluşturur. Yani bu fonksiyon projenin
+  başlangıcında veritabanını hazır hale getirir ve tabloların var olup olmadığını kontrol ederek eksik olanları ekler.
+
+- **get_db_connection()** fonksiyonu, var olan security_data.db dosyasına bağlantı kurar. Eğer data klasörü yoksa önce klasörü oluşturur. Bu
+  sayede, sistem her çağrıldığında doğrudan veritabanına güvenli şekilde bağlanmayı sağlar.
+
+- **get_all_records()** fonksiyonu, guests, cargos, emergencies ve staff tablolarındaki tüm verileri çekip döndürür. Her tablo için kolon
+  adlarını alır ve satır verilerini sözlük (dictionary) formatına dönüştürerek daha okunabilir hale getirir. Eğer bir tablo bulunmazsa,
+  kullanıcıya uyarı mesajı verir ve ilgili tablo için boş liste döndürür.
+
+- **add_record(table_name, record_data)** fonksiyonu, belirtilen tabloya yeni bir kayıt ekler. SQL enjeksiyonunu engellemek için parametre
+  bağlama (?) kullanır. Kolon adlarını ve değerleri otomatik olarak record_data sözlüğünden çıkarır ve sorguya ekler. İşlem başarılı olursa
+  onay mesajı döner; hata olursa açıklayıcı bir hata mesajı ile kullanıcıya bilgi verir.
+
+- **delete_record(table_name, record_id)** fonksiyonu, verilen tablo içinden belirtilen id değerine sahip kaydı siler. Eğer kayıt bulunursa
+  silme işlemini yapar ve başarı mesajı döner, kayıt yoksa kullanıcıya silinecek bir şey bulunamadığını bildirir. Hatalı sorgu durumunda da
+  uygun hata mesajı üretir.
+
+### MAIN.PY
+
+Bu dosya, projenin merkezi yönetim dosyasıdır. Tüm güvenlik sistemi iş akışını tek bir noktada toplar. FastAPI kullanılarak API tabanlı bir 
+mimari oluşturulmuş, böylece sohbet sistemi, kamera analizi, kapı ve alarm yönetimi ile veritabanı işlemleri tek bir servis üzerinden kontrol 
+edilebilir hale getirilmiştir.
+
+- **FastAPI ve Uygulama Yapısı**
+  Uygulama, FastAPI üzerine inşa edilmiştir. CORS ayarları sayesinde herhangi bir istemci bu API’ye güvenli şekilde bağlanabilir. Bu katmanda
+  ayrıca Pydantic modelleri kullanılarak API’ye gönderilen verilerin doğruluğu garanti altına alınır. Örneğin, Message ve ChatHistory modelleri
+  sohbet verilerini, RecordData ve DeleteData modelleri ise veritabanı CRUD işlemlerini temsil eder.
+
+- **Sohbet ve Agent Akışı**
+  Sohbet sistemi LangGraph üzerine kuruludur. Kullanıcıdan gelen mesajlar /chat endpoint’i üzerinden alınır. Bu mesajlar, LangGraph
+  aracılığıyla işlenerek yapay zekâ modeline gönderilir ve sistem durumu (kapı açık/kapalı, alarm aktif/pasif, şifre denemeleri) sürekli
+  güncellenir. Modelin ürettiği yanıtlar, sohbet geçmişine eklenerek istemciye döndürülür. Böylece gerçek zamanlı olarak kapı ve alarm kontrolü
+  sağlanabilir.
+
+- **Kamera Analizi ve Güvenlik**
+  Kamera analizi arka planda çalışan ayrı bir thread üzerinde gerçekleşir. Bu işlem için YOLO modeli yüklenmiştir. Kamera sürekli olarak analiz 
+  edilir ve tehlikeli nesneler (knife, axe, scissors, hammer vb.) tespit edildiğinde sistem otomatik olarak alarm durumunu "Aktif" hale
+  getirir. Anlık kamera durumu /camera_status endpoint’i üzerinden ön yüze iletilir. Böylece kullanıcı, sistemde bir tehdit algılandığında
+  canlı olarak haberdar olabilir.
+
+- **Admin Paneli ve Veritabanı İşlemleri**
+  Admin paneli için birkaç farklı uç nokta tanımlanmıştır. /admin/login basit bir şifre kontrolü yaparak giriş sağlar. /admin/records mevcut
+  tüm kayıtları döndürürken, /admin/records/add yeni bir güvenlik kaydı eklemeye, /admin/records/delete ise ID’ye göre bir kaydı silmeye imkan
+  tanır. Tüm bu işlemler, SQLite tabanlı bir veritabanı üzerinde gerçekleştirilir. Bu sayede güvenlik verilerinin yönetimi kolayca yapılabilir.
+
+Bu yapı sayesinde sistem, hem otomatik (kamera analizi, şifre denemeleri, alarm yönetimi) hem de manuel (sohbet üzerinden kontrol, admin
+paneli CRUD işlemleri) olarak çalışır. Kullanıcı, sohbet ekranı üzerinden kapıyı açıp kapatabilir, alarmı kontrol edebilir veya misafir/kargo 
+bilgilerini sorgulayabilir. Kamera tarafında tehlikeli nesne algılanırsa sistem otonom şekilde alarma geçer. Admin tarafında ise tüm güvenlik 
+verileri merkezi bir panel üzerinden yönetilebilir.
+
+# MODELLERİN KARŞILAŞTIRMASI
+
+### Rasa
+
+Rasa, chatbot geliştirme ve bakımında en kontrol edilebilir açık kaynak platform olarak öne çıkar. Hem kural tabanlı hem de ML tabanlı diyalog 
+akışlarını yönetmek için kapsamlı araçlar sunar. Kullanıcı girişlerini intent ve entity olarak analiz edip, belirlenen akışlara göre yanıt 
+üretebilirsiniz. Bakım açısından, tüm veriler ve modeller yerel sunucuda tutulduğu için şeffaf ve güvenlidir, istediğiniz zaman veri 
+ekleyebilir, akışı değiştirebilir veya yeni senaryolar ekleyebilirsiniz. Ancak LLM’ler kadar “doğal” ve yaratıcı yanıt üretemez; genellikle 
+belirli iş süreçleri ve SSS’ler için uygundur.
+
+Projemde ilk denediğim yapı buydu. Çok hızlı çalışan bir platform. Aslında sabit bir diyalog ağacı kurgulamamız gerektiği durumlarda en 
+işlevsel platformun bu olduğunu düşünüyorum. Ama esnek olması gereken ve bu esneklik içerisinde tool çalıştırması gereken senaryolarda yetersiz 
+kalıyor.
+
+### GPT‑OSS
+
+GPT‑OSS, chatbot bakımında esnek ve düşük maliyetli bir çözüm sunar. Yerel çalıştırılabilir ve fine-tune edilebilir olması, şirketlerin kendi 
+chatbot verisiyle modeli geliştirmesine imkan tanır. GPT‑OSS’in büyük bağlam penceresi ve güçlü metin üretim kapasitesi, kullanıcı sorularına 
+daha doğal ve çeşitli yanıtlar vermeyi mümkün kılar. Bakım açısından, veri güncelleme ve özel yanıt optimizasyonu için modelin yeniden 
+eğitilmesi veya prompt engineering yapılması gerekir. LLM olduğu için, Rasa’ya kıyasla “sihirli” gibi görünen yanıtlar üretir, ancak çok dar 
+kapsamlı veya kritik bilgi gerektiren durumlarda hatalar olabilir.
+
+Projemin en son halinde kullandığım ve en verim aldığım model. Lokal olarak şirket bilgisayarında çalışırken diyalog esnasında yalnızca iki 
+saniyede cevap üretebiliyordu. Ve bu cevaplarda tool kullansa bile süre değişmiyordu. GPT-OSS, toolları en etkin biçimde kullanan model. aynı 
+zamanda girdiğim sistem propmtlara bağlılığı da diyalog esnasında hiç değişmiyor.
+
+### Llama (3 / 4)
+
+Llama modelleri, açık kaynaklı ve yüksek performanslı LLM’ler olarak chatbot bakımında GPT‑OSS’e benzer avantajlar sağlar. Özellikle Llama 4 
+serisi, uzun bağlamları takip edebilir ve kompleks diyalogları yönetebilir. Bakım açısından, model üzerinde fine-tune yapabilir veya kendi veri 
+setinizi kullanarak domain-specific chatbot geliştirebilirsiniz. Llama’nın açık kaynak olması, güvenlik ve özelleştirme için esneklik sağlar. 
+Dezavantajı, Rasa kadar sistematik akış yönetimi araçları sunmaması; bu nedenle diyalog mantığını modelin kendisine bırakmanız gerekebilir.
+
+Türkçe dil desteği biraz zayıf. Tool desteği var ama tool konfigürasyonu aşırı karmaşık olmasa da openai modellerinden daha zor.
+
+### GPT‑4o
+
+GPT‑4o, chatbot bakımında en güçlü ve multimodal modeldir. Metin, ses ve görsel girdileri işleyebilir, bağlamı uzun süre takip edebilir ve 
+insan benzeri yanıtlar üretebilir. Bakım açısından API üzerinden kullanıldığı için modelin altyapısı sizin kontrolünüzde değildir, ancak prompt 
+engineering ile yönlendirme mümkündür. GPT‑4o, kritik iş süreçleri ve müşteri etkileşimi için yüksek kaliteli yanıt sağlar; ancak maliyeti 
+yüksektir ve veri gizliliği açısından yerel model gibi tam kontrol sunmaz.
+
+GPT-OSS ile benzer performans gösterdi. Benim yaptığım işlemler kompleks olmadığı için net bir performans farkı gözlemleyemesem de api call 
+sayesinde online çalışması cevap verme zamanını bir saniyeye düşürüyordu. Benim hedefim tamamen yerel çalışan bir sistem olduğu için tercih 
+etmedim.
+
+
 # KODU NASIL ÇALIŞTIRMALIYIM?
 
   1) Şirket sunucusuna bağlı bir bilgisayarda yeni bir terminal açıp **ssh alper@192.168.0.94** komutu girilmeli.
