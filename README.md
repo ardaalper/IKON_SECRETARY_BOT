@@ -171,6 +171,29 @@ GPT-OSS ile benzer performans gösterdi. Benim yaptığım işlemler kompleks ol
 sayesinde online çalışması cevap verme zamanını bir saniyeye düşürüyordu. Benim hedefim tamamen yerel çalışan bir sistem olduğu için tercih 
 etmedim.
 
+### YOLOv11
+
+YOLOv11, YOLO ailesinin en güncel nesne tespit modeli olup hız ve doğruluk arasında güçlü bir denge sunar. Önceki sürümlere kıyasla daha 
+verimli mimari optimizasyonları içerir ve hem küçük cihazlarda gerçek zamanlı çalışabilme hem de büyük ölçekli veri kümelerinde yüksek 
+hassasiyet sağlama yeteneğine sahiptir. Nesne tespitinde kullanılan gelişmiş özellik çıkarma katmanları sayesinde küçük nesneleri daha iyi 
+yakalayabilir, aynı zamanda yüksek çözünürlüklü görüntülerde daha doğru sonuçlar üretir.
+
+Modeli internetten bulduğum hazır verisetleriyle eğittim. Tehlikeli obje içeren veri setlerinin (harmful objects dataset) yanı sıra genel 
+olarak nesne algılayan (COCO) veri setleriyle ayrı ayrı testler yaptım. Tehlikeli veri setleriyle eğittim model en güzel sonucu verdi. Bu model
+Qwen2.5-VL gibi multimodellere kıyasla çok daha hızlı görüntü algılıyor. Kendi projemde her saniye görüntü algılamasını kendi kişisel 
+bilgisayarımda yapmama rağmen saliseler içerisinde bunu gerçekleştirmesi öne atıyor.
+
+### Qwen2.5-VL
+
+Qwen2.5-VL (Vision-Language), Alibaba Cloud tarafından geliştirilen çok modlu (multimodal) büyük dil modeli ailesinin bir üyesidir. Qwen2.5 
+serisi genel olarak metin anlama ve üretmede güçlü iken, Qwen2.5-VL özellikle görsel girdilerle birlikte doğal dil işleme için tasarlanmıştır. 
+Bu model, görüntüleri analiz ederek nesne tanıma, tablo/şema anlama, metin okuma (OCR), görsel mantık yürütme ve karmaşık sahneleri açıklama 
+gibi görevleri yerine getirebilir.
+
+Görüntülerdeki frameleri 10 saniyede bir ayıklayıp modele sunduğum ve bu modelin çıktılarından yola çıkarak tehlike tespiti yaptığım bir tool 
+optmizasyonunu denedim. Ama bu denememde görüntü ve dil modelinin aynı anda sunucuda çalışması ikisini de dramatik ölçüde yavaşlattı. Dil 
+modelinin iki saniye olan yanı süresi 20 saniyelere çıktı. Onun haricinde isabetlilik açısından oldukça başarılı buldum. Başka projelerde 
+düzgün optimizasyon ve planlamayla kullanılmasını öneririm.
 
 # KODU NASIL ÇALIŞTIRMALIYIM?
 
