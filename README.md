@@ -6,35 +6,17 @@ Projede kullandığım görüntü algılama modeli: YOLO v11
 
 Projede kullandığım görüntü algılama veri seti: https://universe.roboflow.com/harmfull-objects/harmful-objects-wmmdi
 
-BAŞLICA GÖREVLER VE ÖZELLİKLER:
-  
-  - Kapı açma kapama kontrolü: Kullanıcı doğru şifreyi girerse kapıyı açar. Yanlış şifre veya şifresiz girişleri engeller. tools.py'daki door_control toolu bu kontrolü gerçekleştirir.
-  
-  - Kargo kontrolü: Gelen kargolar hakkında sorgulama yapılmasını sağlar. tools.py'daki cargo toolu bu kontrolü gerçekleştirir.
-  
-  - Misafir karşılama: Bu işlevi yerine getirirken iki mod var. İlki, kullanıcı eğer birisinin misaifiri olduğunu söylerse, ziyaret etmek istediği kişinin bilgilerini, ofisteki konumunu söyler. İkinci mod ise korumalı mod. Kullanıcı, bir personelin misaifrlerini öğrenmek istediği zaman ancak şifreyi girerse o personelin misafirleri hakkındaki bilgiye ulaşabilir.  tools.py'daki guest ve which_guest_of_staff toolları bu kontrolleri gerçekleştirir.
-  
-  - Personel bilgisi sorgulama: Kullanıcı adı (personel adı) üzerinden sorgulama yapılır. staff_info toolu görevlidir.
-  
-  - Email ile haberleşme: send_guest_email toolu ile haber iletilmek istenen şirket personeline otomatik e-mail atılır
-  
-  - Güvenlik: bu işlevi yerine getiren iki ayrı araç var. İlki konuşmalardaki tehlikeli ifadeleri veya yardım çağrılarını değerlendiren security toolu. Bu tool, tehlike içeren durumlarda alarm durumunu aktifleştirir. İkinci araç ise video kameradan her saniye görntü çekerek bu görüntülerde sıkıntı arz eden durum olup olmadığını kontrol eder. Görüntü tehlikeli nesne içeriyorsa alarm durumunu aktifleştirir.
+**GİRİŞ:**
 
-  - tts ve stt: Kullanıcı dilerse bota iletmek istediği mesajları konuşma yoluyla iletebilir. Bot, verdiği mesajları sohbet kutusuna yazmanın yanı sıra seslendirerek de iletir.
+GRAPH.PY
 
-BACKEND DOSYALARI:
+Langgraph kütüphanesini ve teercih edilen llm'i bir araya getiren dosyadır. Graph, kendi içerisinde iki düğüm barındırır. Bunlar call_model ve 
+tool_node düğümleridir. Tool_node düğümü llm'in gerekli gördüğü durumlar karşısında çağırması gereken tool ları barındırır. Bu toollar kendi 
+içlerinde tanımlarını ve örnek çalışma durumlarını barındırır. Bu sayede llm hangi tool'u çağırması gerektiğini anlar.
 
-   - security_data.db : burada şirket personeli hakkındaki bilgiler bulunur. gelen kargo, email adresleri, beklenen ziyaretçiler, ofisteki konumlar vb.
-  
-   - graph.py : langgraph framworkü içerisinde tool'ların ve llm'in etkileşiminden sorumludur.
-  
-   - mailsender.py : Botun otomatik olarak mail yollaması için mail servisine erişimini düzenler.
-  
-   - tools.py : gerekli tooların fonksiyon tanımlarını içerir.
-  
-   - visionYOLO_test.py : Geliştirme sürecinde eğitilen YOLO varyasyonlarınını doğru çalıştığını kontrol etmek için gerekli test ortamını sağlar.
-  
-   - main.py : Backend;in end pointlerini tutan ve statelerin güncellenmesinde yönetilmesinden sorumlu en üst katman. Sohbet geçmişi frontendde tutulduğu için /chat kanalı kendisine gelen sohbet geçmişiyle beraber sohbet cevabını llme iletir. /camera_statu kanalı ise arka planda her saniye görüntüyü değerlendirir. Endpointte sunulan kamera alarm durumunu her saniye yeniler ve frontende sunar.
+AgentState dediğimiz yapı ise TypedDict inherited bir yapıdır ve chatin mesajlaşma trafiğini takip edebilmesi için bir mesaj arrayi barındırır.
+Bunun yanı sıra kapı,alarm,şifre deneme statelerini de barındırır ama llm'in bunlara erişimi yoktur. Onun yerine llm'e her mesaj yolladığımızda
+bu stateleri mesajın içine gömeriz.
 
 KODU NASIL ÇALIŞTIRMALIYIM?
 
