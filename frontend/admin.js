@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     if (headers) {
                         const headerRow = document.createElement('thead');
-                        headerRow.innerHTML = `<tr>${headers.filter(h => h !== 'id').map(header => `<th>${header.charAt(0).toUpperCase() + header.slice(1)}</th>`).join('')}<th>İşlemler</th></tr>`;
+                        headerRow.innerHTML = `<tr><th>ID</th>${headers.filter(h => h !== 'id').map(header => `<th>${header.charAt(0).toUpperCase() + header.slice(1)}</th>`).join('')}</tr>`;
                         table.appendChild(headerRow);
                     }
 
